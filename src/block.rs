@@ -1,3 +1,4 @@
+use crate::mine;
 use hex::encode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -16,7 +17,7 @@ pub struct Header {
     previous_block_hash: String,
     merkle_root: String,
     time: u64,
-    bits: u32,
+    pub(crate) bits: u32,
     pub nonce: u64,
 }
 
@@ -24,10 +25,11 @@ pub fn create_block(
     transactions: Vec<Transaction>,
     previous_block_hash: String,
     time: u64,
-    bits: u32,
+    bits_decompressed: primitive_types::U256,
 ) -> Block {
     let merkle_root = calculate_merkle_root(&transactions);
-    let header = create_header(previous_block_hash, merkle_root, time, bits);
+    let bits_compressed = mine::compress_target(bits_decompressed);
+    let header = create_header(previous_block_hash, merkle_root, time, bits_compressed);
     Block {
         header,
         transactions,
@@ -53,7 +55,7 @@ fn calculate_merkle_root(transactions: &[Transaction]) -> String {
     encode(sha256(hashes.join("").as_bytes()))
 }
 
-fn sha256(data: &[u8]) -> Vec<u8> {
+pub fn sha256(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);
     hasher.finalize().to_vec()

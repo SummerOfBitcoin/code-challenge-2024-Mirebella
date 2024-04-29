@@ -1,5 +1,6 @@
 mod block;
 mod input;
+mod mine;
 mod validation;
 
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -7,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 
 use crate::block::create_block;
+use crate::mine::mine;
 
 fn main() -> Result<()> {
     // input
@@ -24,11 +26,18 @@ fn main() -> Result<()> {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let bits: u32 = 0x0000ffff; // target difficulty
+    let bits_u256 = primitive_types::U256::from(
+        "0000ffff00000000000000000000000000000000000000000000000000000000",
+    );
 
-    let block = create_block(validated_txs, previous_block_hash, time, bits);
-    println!("Block header: {:?}", block.header);
+    let block = create_block(validated_txs, previous_block_hash, time, bits_u256);
+    println!("Block header (before mining): {:?}", block.header);
     println!("Block tx count: {:?}", block.transactions.len());
+
+    // mine
+    let header = mine(block, bits_u256);
+    println!("Block was successfully mined!");
+    println!("Block header (after mining): {:?}", header);
 
     Ok(())
 }
