@@ -4,7 +4,6 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-
 /// Read transaction jsons from mempool folder and build the hashmap
 pub(crate) fn read_txs_into_hashmap() -> Result<HashMap<String, String>> {
     let mut result = HashMap::new();
