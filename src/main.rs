@@ -2,12 +2,13 @@ mod block;
 mod input;
 mod mine;
 mod validation;
+mod write_to_file;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
-use crate::block::create_block;
+use crate::block::{create_block, create_coinbase_transaction};
 use crate::mine::mine;
 
 fn main() -> Result<()> {
@@ -16,7 +17,7 @@ fn main() -> Result<()> {
     println!("All tx count: {:?}", txs.len());
 
     // validation
-    let validated_txs = validation::validate_all_transactions(txs);
+    let mut validated_txs = validation::validate_all_transactions(txs);
     println!("Validated tx count: {:?}", validated_txs.len());
 
     // block
@@ -29,6 +30,11 @@ fn main() -> Result<()> {
     let bits_u256 = primitive_types::U256::from(
         "0000ffff00000000000000000000000000000000000000000000000000000000",
     );
+
+    // Add to validated tx the coinbase transaction
+    let block_reward = 50;
+    let miner_address = "my_miner_address";
+    validated_txs.push(create_coinbase_transaction(block_reward, miner_address));
 
     let block = create_block(validated_txs, previous_block_hash, time, bits_u256);
     println!("Block header (before mining): {:?}", block.header);

@@ -3,7 +3,7 @@ use hex::encode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::validation::Transaction;
+use crate::validation::{Input, Output, PrevOut, Transaction};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Block {
@@ -59,4 +59,37 @@ pub fn sha256(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);
     hasher.finalize().to_vec()
+}
+
+pub(crate) fn create_coinbase_transaction(reward: u64, miner_address: &str) -> Transaction {
+    Transaction {
+        version: 1,
+        locktime: 0,
+        vin: vec![Input {
+            txid: String::new(), // No input transaction (new coins)
+            vout: 0,
+            prevout: PrevOut {
+                scriptpubkey: String::new(),
+                scriptpubkey_asm: String::new(),
+                scriptpubkey_type: String::new(),
+                scriptpubkey_address: String::new(),
+                value: 0,
+            },
+            scriptsig: String::new(), // No signature script for coinbase
+            scriptsig_asm: String::new(),
+            witness: vec![],
+            is_coinbase: true,
+            sequence: 0xFFFFFFFF,
+        }],
+        vout: vec![Output {
+            scriptpubkey: format!(
+                "OP_DUP OP_HASH160 {} OP_EQUALVERIFY OP_CHECKSIG",
+                miner_address
+            ),
+            scriptpubkey_asm: String::new(),
+            scriptpubkey_type: "pubkeyhash".to_string(),
+            scriptpubkey_address: miner_address.to_string(),
+            value: reward, // Block reward
+        }],
+    }
 }

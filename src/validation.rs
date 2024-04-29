@@ -7,40 +7,40 @@ const MAX_BLOCK_SIZE: usize = 1_000_000;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Transaction {
-    version: i32,
-    locktime: u32,
-    vin: Vec<Input>,
-    vout: Vec<Output>,
+    pub(crate) version: i32,
+    pub(crate) locktime: u32,
+    pub(crate) vin: Vec<Input>,
+    pub(crate) vout: Vec<Output>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Input {
-    txid: String,
-    vout: u32,
-    prevout: PrevOut,
-    scriptsig: String,
-    scriptsig_asm: String,
-    witness: Vec<String>,
-    is_coinbase: bool,
-    sequence: u64,
+pub(crate) struct Input {
+    pub(crate) txid: String,
+    pub(crate) vout: u32,
+    pub(crate) prevout: PrevOut,
+    pub(crate) scriptsig: String,
+    pub(crate) scriptsig_asm: String,
+    pub(crate) witness: Vec<String>,
+    pub(crate) is_coinbase: bool,
+    pub(crate) sequence: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PrevOut {
-    scriptpubkey: String,
-    scriptpubkey_asm: String,
-    scriptpubkey_type: String,
-    scriptpubkey_address: String,
-    value: u64,
+pub(crate) struct PrevOut {
+    pub(crate) scriptpubkey: String,
+    pub(crate) scriptpubkey_asm: String,
+    pub(crate) scriptpubkey_type: String,
+    pub(crate) scriptpubkey_address: String,
+    pub(crate) value: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Output {
-    scriptpubkey: String,
-    scriptpubkey_asm: String,
-    scriptpubkey_type: String,
-    scriptpubkey_address: String,
-    value: u64,
+pub(crate) struct Output {
+    pub(crate) scriptpubkey: String,
+    pub(crate) scriptpubkey_asm: String,
+    pub(crate) scriptpubkey_type: String,
+    pub(crate) scriptpubkey_address: String,
+    pub(crate) value: u64,
 }
 
 pub(crate) fn validate_all_transactions(txs: HashMap<String, String>) -> Vec<Transaction> {
