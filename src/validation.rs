@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 const TOTAL_MONEY_CAP: u64 = 21_000_000 * 100_000_000;
 const MAX_BLOCK_SIZE: usize = 1_000_000;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Transaction {
+pub(crate) struct Transaction {
     version: i32,
     locktime: u32,
     vin: Vec<Input>,
@@ -46,76 +45,74 @@ struct Output {
 
 pub(crate) fn validate_all_transactions(
     txs: HashMap<String, String>,
-) -> Result<HashMap<String, String>> {
-    let mut valid_txs = HashMap::new();
+) -> Vec<Transaction> {
+    let mut valid_txs = Vec::new();
     let outputs_hashmap = create_output_hashmap(&txs);
     for (txid, tx_json) in &txs {
-        if is_transaction_valid(txid, &tx_json, &outputs_hashmap) {
-            valid_txs.insert(txid.clone(), tx_json.clone());
+        if let Some(tx) = is_transaction_valid(txid, &tx_json, &outputs_hashmap) {
+            valid_txs.push(tx)
         }
     }
 
-    Ok(valid_txs)
+    valid_txs
 }
 
 fn is_transaction_valid(
     tx_id: &str,
     tx_json: &&String,
     output_hashmap: &HashMap<String, String>,
-) -> bool {
+) -> Option<Transaction> {
     // Check syntactic correctness
     let maybe_tx = is_valid_syntax(tx_json);
-    if maybe_tx.is_none() {
-        return false;
-    }
+    maybe_tx.as_ref()?;
     let tx = maybe_tx.unwrap();
 
     // Make sure neither in or out lists are empty
     if !is_valid_in_and_out_txs_lists_are_not_empty(&tx) {
-        return false;
+        return None;
     }
 
     // Size in bytes <= MAX_BLOCK_SIZE
     if !is_valid_max_block_size_correct(tx_json) {
-        return false;
+        return None;
     }
 
     // Each output value, as well as the total, must be in legal money range
     if !is_valid_check_output_and_total_money_range(&tx) {
-        return false;
+        return None;
     }
 
     // Make sure none of the inputs have hash=0, n=-1 (coinbase transactions)
     if !is_valid_check_hash_and_coinbase(&tx) {
-        return false;
+        return None;
     }
 
     // Check that nLockTime <= INT_MAX[1], size in bytes >= 100[2], and sig opcount <= 2[3]
     if !is_valid_check_n_lock_time_size_sign_opcount(tx_json, &tx) {
-        return false;
+        return None;
     }
 
     // Reject "nonstandard" transactions: scriptSig doing anything other than pushing numbers on the stack, or scriptPubkey not matching the two usual forms
     if !is_valid_reject_nonstandard_txs(&tx) {
-        return false;
+        return None;
     }
 
     // Reject if transaction fee (defined as sum of input values minus sum of output values) would be too low to get into an empty block
     if !is_valid_check_tx_fee(&tx) {
-        return false;
+        return None;
     }
 
     // For each input, if the referenced output exists in any other tx in the pool, reject this transaction.
     if !is_valid_check_if_output_exists_in_other_tx(tx_id, &tx, output_hashmap) {
-        return false;
+        return None;
     }
 
     // Reject if the sum of input values < sum of output values
     if !is_valid_sum_of_inputs_bigger_than_outputs(&tx) {
-        return false;
+        return None;
     }
 
-    true
+    Some(tx)
 }
 
 fn is_valid_sum_of_inputs_bigger_than_outputs(tx: &Transaction) -> bool {
