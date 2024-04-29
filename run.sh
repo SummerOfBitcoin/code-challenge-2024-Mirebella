@@ -1,2 +1,2 @@
 # Update this file to run your own code
-cargo run
+RUST_BACKTRACE=1 cargo run
