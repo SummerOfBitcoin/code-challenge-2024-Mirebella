@@ -18,8 +18,12 @@ fn main() -> Result<()> {
     println!("Validated tx count: {:?}", validated_txs.len());
 
     // block
-    let previous_block_hash = "0000000000000000000000000000000000000000000000000000000000000000".to_string();
-    let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let previous_block_hash =
+        "0000000000000000000000000000000000000000000000000000000000000000".to_string();
+    let time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     let bits: u32 = 0x0000ffff; // target difficulty
 
     let block = create_block(validated_txs, previous_block_hash, time, bits);

@@ -43,9 +43,7 @@ struct Output {
     value: u64,
 }
 
-pub(crate) fn validate_all_transactions(
-    txs: HashMap<String, String>,
-) -> Vec<Transaction> {
+pub(crate) fn validate_all_transactions(txs: HashMap<String, String>) -> Vec<Transaction> {
     let mut valid_txs = Vec::new();
     let outputs_hashmap = create_output_hashmap(&txs);
     for (txid, tx_json) in &txs {

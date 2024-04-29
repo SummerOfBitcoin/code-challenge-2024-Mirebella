@@ -1,6 +1,6 @@
 use hex::encode;
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 use crate::validation::Transaction;
 
@@ -20,7 +20,12 @@ pub struct Header {
     pub nonce: u64,
 }
 
-pub fn create_block(transactions: Vec<Transaction>, previous_block_hash: String, time: u64, bits: u32) -> Block {
+pub fn create_block(
+    transactions: Vec<Transaction>,
+    previous_block_hash: String,
+    time: u64,
+    bits: u32,
+) -> Block {
     let merkle_root = calculate_merkle_root(&transactions);
     let header = create_header(previous_block_hash, merkle_root, time, bits);
     Block {
