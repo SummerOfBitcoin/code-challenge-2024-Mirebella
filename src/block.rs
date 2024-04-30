@@ -55,10 +55,15 @@ fn calculate_merkle_root(transactions: &[Transaction]) -> String {
     encode(sha256(hashes.join("").as_bytes()))
 }
 
-pub fn sha256(data: &[u8]) -> Vec<u8> {
+pub(crate) fn sha256(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);
     hasher.finalize().to_vec()
+}
+
+pub(crate) fn double_sha256(data: &[u8]) -> Vec<u8> {
+    let first = sha256(data);
+    sha256(&first)
 }
 
 pub(crate) fn create_coinbase_transaction(reward: u64, miner_address: &str) -> Transaction {

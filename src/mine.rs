@@ -1,7 +1,7 @@
 use crate::block::sha256;
 use crate::block::{Block, Header};
 
-pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> Header {
+pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> Block {
     loop {
         let hash = calculate_block_hash(&block.header);
         let hash_u256 = primitive_types::U256::from_big_endian(&hash);
@@ -13,7 +13,7 @@ pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> 
             println!("hash:   {}", hex::encode(hash));
             println!("target: {}", hex::encode(target_difficulty_bytes));
 
-            return block.header;
+            return block;
         }
         block.header.nonce += 1;
     }

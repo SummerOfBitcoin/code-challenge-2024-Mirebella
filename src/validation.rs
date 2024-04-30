@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
+use crate::block::double_sha256;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 const TOTAL_MONEY_CAP: u64 = 21_000_000 * 100_000_000;
 const MAX_BLOCK_SIZE: usize = 1_000_000;
@@ -11,6 +14,13 @@ pub(crate) struct Transaction {
     pub(crate) locktime: u32,
     pub(crate) vin: Vec<Input>,
     pub(crate) vout: Vec<Output>,
+}
+impl Transaction {
+    pub(crate) fn id(&self) -> Result<String> {
+        let serialized = serde_json::to_string(self)?;
+        let result = double_sha256(serialized.as_bytes());
+        Ok(hex::encode(result))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,12 +53,14 @@ pub(crate) struct Output {
     pub(crate) value: u64,
 }
 
-pub(crate) fn validate_all_transactions(txs: HashMap<String, String>) -> Vec<Transaction> {
-    let mut valid_txs = Vec::new();
+pub(crate) fn validate_all_transactions(
+    txs: HashMap<String, String>,
+) -> HashMap<String, Transaction> {
+    let mut valid_txs = HashMap::new();
     let outputs_hashmap = create_output_hashmap(&txs);
     for (txid, tx_json) in &txs {
         if let Some(tx) = is_transaction_valid(txid, &tx_json, &outputs_hashmap) {
-            valid_txs.push(tx)
+            valid_txs.insert(txid.clone(), tx);
         }
     }
 
