@@ -1,8 +1,9 @@
-use crate::mine;
-use hex::encode;
+use anyhow::Result;
+use byteorder::{LittleEndian, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::mine;
 use crate::validation::{Input, Output, PrevOut, Transaction};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -13,18 +14,32 @@ pub struct Block {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Header {
-    version: i32,
+    version: u32,
     previous_block_hash: String,
     merkle_root: String,
-    time: u64,
+    time: u32,
     pub(crate) bits: u32,
-    pub nonce: u64,
+    pub nonce: u32,
+}
+impl Header {
+    pub(crate) fn to_hex(&self) -> Result<String> {
+        let mut header_bytes = Vec::with_capacity(80);
+
+        header_bytes.write_u32::<LittleEndian>(self.version)?;
+        header_bytes.extend_from_slice(&hex::decode(&self.previous_block_hash)?);
+        header_bytes.extend_from_slice(&hex::decode(&self.merkle_root)?);
+        header_bytes.write_u32::<LittleEndian>(self.time)?;
+        header_bytes.write_u32::<LittleEndian>(self.bits)?;
+        header_bytes.write_u32::<LittleEndian>(self.nonce)?;
+
+        Ok(hex::encode(header_bytes))
+    }
 }
 
 pub fn create_block(
     transactions: Vec<Transaction>,
     previous_block_hash: String,
-    time: u64,
+    time: u32,
     bits_decompressed: primitive_types::U256,
 ) -> Block {
     let merkle_root = calculate_merkle_root(&transactions);
@@ -36,7 +51,7 @@ pub fn create_block(
     }
 }
 
-fn create_header(previous_block_hash: String, merkle_root: String, time: u64, bits: u32) -> Header {
+fn create_header(previous_block_hash: String, merkle_root: String, time: u32, bits: u32) -> Header {
     Header {
         version: 1,
         previous_block_hash,
@@ -50,9 +65,9 @@ fn create_header(previous_block_hash: String, merkle_root: String, time: u64, bi
 fn calculate_merkle_root(transactions: &[Transaction]) -> String {
     let hashes = transactions
         .iter()
-        .map(|tx| encode(sha256(serde_json::to_string(tx).unwrap().as_bytes())))
+        .map(|tx| hex::encode(sha256(serde_json::to_string(tx).unwrap().as_bytes())))
         .collect::<Vec<_>>();
-    encode(sha256(hashes.join("").as_bytes()))
+    hex::encode(sha256(hashes.join("").as_bytes()))
 }
 
 pub(crate) fn sha256(data: &[u8]) -> Vec<u8> {

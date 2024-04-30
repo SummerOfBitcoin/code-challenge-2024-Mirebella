@@ -14,7 +14,7 @@ pub(crate) fn write_block_to_file(
     let file = File::create(path)?;
     let mut writer = BufWriter::new(file);
 
-    writeln!(writer, "{}", serde_json::to_string(header)?)?;
+    writeln!(writer, "{}", header.to_hex()?)?;
 
     if let Some(coinbase) = transactions.first() {
         writeln!(writer, "{}", serde_json::to_string(coinbase)?)?;

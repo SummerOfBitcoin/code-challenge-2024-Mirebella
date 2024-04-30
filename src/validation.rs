@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::block::double_sha256;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 const TOTAL_MONEY_CAP: u64 = 21_000_000 * 100_000_000;
 const MAX_BLOCK_SIZE: usize = 1_000_000;

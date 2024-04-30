@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     let time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs();
+        .as_secs() as u32;
     let bits_u256 = primitive_types::U256::from(
         "0000ffff00000000000000000000000000000000000000000000000000000000",
     );

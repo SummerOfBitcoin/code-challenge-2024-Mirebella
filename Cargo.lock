@@ -58,6 +58,7 @@ name = "code_challenge_2024_mirebella_v2"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "byteorder",
  "hex",
  "primitive-types",
  "serde",
