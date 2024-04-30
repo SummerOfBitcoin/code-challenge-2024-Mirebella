@@ -1,9 +1,11 @@
-use crate::block::sha256;
+use crate::block::double_sha256;
 use crate::block::{Block, Header};
 
-pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> Block {
+use anyhow::Result;
+
+pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> Result<Block> {
     loop {
-        let hash = calculate_block_hash(&block.header);
+        let hash = calculate_block_hash(&block.header)?;
         let hash_u256 = primitive_types::U256::from_big_endian(&hash);
 
         if hash_u256 < target_difficulty_u256 {
@@ -13,7 +15,7 @@ pub fn mine(mut block: Block, target_difficulty_u256: primitive_types::U256) -> 
             println!("hash:   {}", hex::encode(hash));
             println!("target: {}", hex::encode(target_difficulty_bytes));
 
-            return block;
+            return Ok(block);
         }
         block.header.nonce += 1;
     }
@@ -40,7 +42,7 @@ pub(crate) fn compress_target(target: primitive_types::U256) -> u32 {
     ((size as u32) << 24) | (compact & 0x00ffffff)
 }
 
-fn calculate_block_hash(header: &Header) -> Vec<u8> {
-    let header_data = serde_json::to_string(header).unwrap();
-    sha256(header_data.as_bytes())
+fn calculate_block_hash(header: &Header) -> Result<Vec<u8>> {
+    let header_bytes = hex::decode(header.to_hex()?)?;
+    Ok(double_sha256(&header_bytes))
 }

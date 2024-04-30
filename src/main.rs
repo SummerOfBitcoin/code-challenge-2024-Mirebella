@@ -45,7 +45,7 @@ fn main() -> Result<()> {
     println!("Block tx count: {:?}", block.transactions.len());
 
     // mine
-    let mined_block = mine(block, bits_u256);
+    let mined_block = mine(block, bits_u256)?;
     println!("Block was successfully mined!");
     println!("Block header (after mining): {:?}", &mined_block.header);
 
