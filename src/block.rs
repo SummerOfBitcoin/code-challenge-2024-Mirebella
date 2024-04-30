@@ -63,11 +63,46 @@ fn create_header(previous_block_hash: String, merkle_root: String, time: u32, bi
 }
 
 fn calculate_merkle_root(transactions: &[Transaction]) -> String {
-    let hashes = transactions
+    if transactions.is_empty() {
+        return "".to_string();
+    }
+
+    // Reverse transaction IDs for the first level
+    let mut rev_txids_level = transactions
         .iter()
-        .map(|tx| hex::encode(sha256(serde_json::to_string(tx).unwrap().as_bytes())))
-        .collect::<Vec<_>>();
-    hex::encode(sha256(hashes.join("").as_bytes()))
+        .map(|tx| tx.id().unwrap())
+        .map(|txid_hex| hex::decode(txid_hex).unwrap())
+        .map(|txid_bytes| txid_bytes.iter().rev().cloned().collect::<Vec<u8>>())
+        .collect::<Vec<Vec<u8>>>();
+
+    while rev_txids_level.len() > 1 {
+        let mut rev_txids_next_level = Vec::new();
+
+        let len = rev_txids_level.len();
+        for i in (0..len).step_by(2) {
+            let pair = match i + 1 == len {
+                true => sha256(
+                    &[
+                        rev_txids_level.get(i).unwrap().as_slice(),
+                        rev_txids_level.get(i).unwrap().as_slice(),
+                    ]
+                    .concat(),
+                ),
+                false => sha256(
+                    &[
+                        rev_txids_level.get(i).unwrap().as_slice(),
+                        rev_txids_level.get(i + 1).unwrap().as_slice(),
+                    ]
+                    .concat(),
+                ),
+            };
+            rev_txids_next_level.push(pair);
+        }
+
+        rev_txids_level = rev_txids_next_level;
+    }
+
+    hex::encode(rev_txids_level.first().unwrap())
 }
 
 pub(crate) fn sha256(data: &[u8]) -> Vec<u8> {
