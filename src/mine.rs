@@ -44,5 +44,7 @@ pub(crate) fn compress_target(target: primitive_types::U256) -> u32 {
 
 fn calculate_block_hash(header: &Header) -> Result<Vec<u8>> {
     let header_bytes = hex::decode(header.to_hex()?)?;
-    Ok(double_sha256(&header_bytes))
+    let mut double_hash = double_sha256(&header_bytes);
+    double_hash.reverse();
+    Ok(double_hash)
 }
