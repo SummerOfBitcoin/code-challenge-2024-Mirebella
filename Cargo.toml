@@ -1,0 +1,12 @@
+[package]
+name = "code_challenge_2024_mirebella_v2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "*"
+hex = "*"
+primitive-types = "0.12.2"
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "*"
+sha2 = "*"
