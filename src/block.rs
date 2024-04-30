@@ -81,14 +81,14 @@ fn calculate_merkle_root(transactions: &[Transaction]) -> String {
         let len = rev_txids_level.len();
         for i in (0..len).step_by(2) {
             let pair = match i + 1 == len {
-                true => sha256(
+                true => double_sha256(
                     &[
                         rev_txids_level.get(i).unwrap().as_slice(),
                         rev_txids_level.get(i).unwrap().as_slice(),
                     ]
                     .concat(),
                 ),
-                false => sha256(
+                false => double_sha256(
                     &[
                         rev_txids_level.get(i).unwrap().as_slice(),
                         rev_txids_level.get(i + 1).unwrap().as_slice(),
