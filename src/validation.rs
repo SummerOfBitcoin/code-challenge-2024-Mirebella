@@ -276,5 +276,9 @@ fn is_valid_in_and_out_txs_lists_are_not_empty(tx: &Transaction) -> bool {
 }
 
 fn is_valid_syntax(tx_json: &str) -> Option<Transaction> {
-    serde_json::from_str::<Transaction>(tx_json).ok()
+    convert_json_to_tx(tx_json).ok()
+}
+
+pub(crate) fn convert_json_to_tx(tx_json: &str) -> Result<Transaction> {
+    serde_json::from_str::<Transaction>(tx_json).map_err(Into::into)
 }
