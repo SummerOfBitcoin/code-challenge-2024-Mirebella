@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::block::double_sha256;
 use anyhow::Result;
+use byteorder::{LittleEndian, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 
 const TOTAL_MONEY_CAP: u64 = 21_000_000 * 100_000_000;
@@ -9,16 +10,67 @@ const MAX_BLOCK_SIZE: usize = 1_000_000;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Transaction {
-    pub(crate) version: i32,
+    pub(crate) version: u32,
     pub(crate) locktime: u32,
     pub(crate) vin: Vec<Input>,
     pub(crate) vout: Vec<Output>,
 }
 impl Transaction {
     pub(crate) fn id(&self) -> Result<String> {
-        let serialized = serde_json::to_string(self)?;
-        let result = double_sha256(serialized.as_bytes());
-        Ok(hex::encode(result))
+        let is_pkh = true;
+
+        let mut bytes = Vec::new();
+
+        if is_pkh {
+            // TXID = HASH256([version][inputs][outputs][locktime])
+            bytes.write_u32::<LittleEndian>(self.version)?;
+            bytes.extend_from_slice(&self.get_pkh_inputs_bytes());
+            bytes.extend_from_slice(&self.get_pkh_outputs_bytes());
+            bytes.write_u32::<LittleEndian>(self.locktime)?;
+        }
+
+        let mut double_hashed = double_sha256(&bytes);
+        double_hashed.reverse();
+        Ok(hex::encode(double_hashed))
+    }
+
+    pub fn get_pkh_inputs_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes
+            .write_u32::<LittleEndian>(self.vin.len() as u32)
+            .unwrap();
+
+        for input in &self.vin {
+            let txid_bytes = hex::decode(&input.txid).unwrap();
+            bytes.extend_from_slice(&txid_bytes);
+            bytes.write_u32::<LittleEndian>(input.vout).unwrap();
+            bytes
+                .write_u32::<LittleEndian>(input.scriptsig.len() as u32)
+                .unwrap();
+            bytes.extend_from_slice(input.scriptsig.as_bytes());
+            bytes.write_u64::<LittleEndian>(input.sequence).unwrap();
+        }
+
+        bytes
+    }
+
+    pub fn get_pkh_outputs_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes
+            .write_u32::<LittleEndian>(self.vout.len() as u32)
+            .unwrap();
+
+        for output in &self.vout {
+            bytes.write_u64::<LittleEndian>(output.value).unwrap();
+            bytes
+                .write_u32::<LittleEndian>(output.scriptpubkey.len() as u32)
+                .unwrap();
+            bytes.extend_from_slice(output.scriptpubkey.as_bytes());
+        }
+
+        bytes
     }
 }
 
