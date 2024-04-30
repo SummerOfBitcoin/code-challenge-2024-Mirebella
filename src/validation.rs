@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use crate::block::double_sha256;
 use anyhow::Result;
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use serde::{Deserialize, Serialize};
+
+use crate::block::double_sha256;
 
 const TOTAL_MONEY_CAP: u64 = 21_000_000 * 100_000_000;
 const MAX_BLOCK_SIZE: usize = 1_000_000;
@@ -17,17 +18,16 @@ pub(crate) struct Transaction {
 }
 impl Transaction {
     pub(crate) fn id(&self) -> Result<String> {
-        let is_pkh = true;
-
         let mut bytes = Vec::new();
 
-        if is_pkh {
-            // TXID = HASH256([version][inputs][outputs][locktime])
-            bytes.write_u32::<LittleEndian>(self.version)?;
-            bytes.extend_from_slice(&self.get_pkh_inputs_bytes());
-            bytes.extend_from_slice(&self.get_pkh_outputs_bytes());
-            bytes.write_u32::<LittleEndian>(self.locktime)?;
-        }
+        // TXID = HASH256([version][inputs][outputs][locktime])
+
+        bytes.write_u32::<LittleEndian>(self.version)?;
+        // println!("Serialized === version: {}", hex::encode(bytes.clone()));
+        bytes.extend_from_slice(&self.get_pkh_inputs_bytes());
+        bytes.extend_from_slice(&self.get_pkh_outputs_bytes());
+        bytes.write_u32::<LittleEndian>(self.locktime)?;
+        // println!("Serialized locktime: {:?}", bytes);
 
         let mut double_hashed = double_sha256(&bytes);
         double_hashed.reverse();
@@ -37,37 +37,54 @@ impl Transaction {
     pub fn get_pkh_inputs_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes
-            .write_u32::<LittleEndian>(self.vin.len() as u32)
-            .unwrap();
+        bytes.write_u32::<BigEndian>(self.vin.len() as u32).unwrap();
+        // println!("Serialized input count: {:?}", bytes);
 
         for input in &self.vin {
             let txid_bytes = hex::decode(&input.txid).unwrap();
             bytes.extend_from_slice(&txid_bytes);
+            // println!("Serialized txid: {}", hex::encode(&txid_bytes));
+
             bytes.write_u32::<LittleEndian>(input.vout).unwrap();
+            // println!("Serialized vout: {}", hex::encode(input.vout.to_le_bytes()));
+
             bytes
                 .write_u32::<LittleEndian>(input.scriptsig.len() as u32)
                 .unwrap();
             bytes.extend_from_slice(input.scriptsig.as_bytes());
+            // println!(
+            //     "Serialized scriptsig size: {}",
+            //     hex::encode((input.scriptsig.len() as u64).to_le_bytes())
+            // );
+            // println!(
+            //     "Serialized scriptsig: {}",
+            //     hex::encode(input.scriptsig.as_bytes())
+            // );
+
             bytes.write_u64::<LittleEndian>(input.sequence).unwrap();
+            // println!(
+            //     "Serialized sequence: {}",
+            //     hex::encode(input.sequence.to_le_bytes())
+            // );
         }
 
         bytes
     }
 
-    pub fn get_pkh_outputs_bytes(&self) -> Vec<u8> {
+    pub(crate) fn get_pkh_outputs_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-
         bytes
-            .write_u32::<LittleEndian>(self.vout.len() as u32)
+            .write_u32::<BigEndian>(self.vout.len() as u32)
             .unwrap();
 
         for output in &self.vout {
             bytes.write_u64::<LittleEndian>(output.value).unwrap();
+
+            let scriptpubkey_bytes = output.scriptpubkey.as_bytes();
             bytes
-                .write_u32::<LittleEndian>(output.scriptpubkey.len() as u32)
+                .write_u32::<LittleEndian>(scriptpubkey_bytes.len() as u32)
                 .unwrap();
-            bytes.extend_from_slice(output.scriptpubkey.as_bytes());
+            bytes.extend_from_slice(scriptpubkey_bytes);
         }
 
         bytes
