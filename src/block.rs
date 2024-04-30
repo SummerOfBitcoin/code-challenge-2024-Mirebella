@@ -53,7 +53,7 @@ pub fn create_block(
 
 fn create_header(previous_block_hash: String, merkle_root: String, time: u32, bits: u32) -> Header {
     Header {
-        version: 1,
+        version: 4,
         previous_block_hash,
         merkle_root,
         time,
